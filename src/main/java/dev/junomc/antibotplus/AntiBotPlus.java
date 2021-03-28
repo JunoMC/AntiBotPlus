@@ -49,7 +49,7 @@ public final class AntiBotPlus extends JavaPlugin {
 
         this.is19Server = true;
         this.is13Server = false;
-        this.oldEngine = false;
+        this.oldEngine = true;
 
         getFileDataUtils().createFile("config.yml", YamlFile.CONFIG.getYml());
         getFileDataUtils().createFile("whitelist.yml");
@@ -80,7 +80,7 @@ public final class AntiBotPlus extends JavaPlugin {
             this.eng = new NewEngine();
         }
 
-        this.getEngine().hideConsoleMessages();
+        getEngine().hideConsoleMessages();
 
         registerEvents(new PlayerPreLoginListener());
 

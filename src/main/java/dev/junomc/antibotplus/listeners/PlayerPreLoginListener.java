@@ -52,8 +52,9 @@ public class PlayerPreLoginListener implements Listener {
 
         if (blacklist.size() > 0) {
             if (blacklist.contains(address)) {
-                e.setLoginResult(Result.KICK_FULL);
+                e.setLoginResult(Result.KICK_OTHER);
                 e.setKickMessage(antiBotUtils.color(kickMsg));
+                antiBotUtils.getInstance().getEngine().hideConsoleMessages();
                 AntiBotPlus.botCounter++;
                 return;
             }
@@ -94,9 +95,10 @@ public class PlayerPreLoginListener implements Listener {
         if (AntiBotPlus.enable) {
             String APIKey = mapping.yamlMapping("IPHunter").string("APIKey");
 
-            JsonObject object = new RequestUtils(APIKey, address).response();
+            RequestUtils requestUtils = new RequestUtils(APIKey, address);
 
-            JsonObject ariel = new RequestUtils(APIKey, address).ariel();
+            JsonObject object = requestUtils.response();
+            JsonObject ariel = requestUtils.ariel();
 
             if (ariel.get("isVPN").getAsBoolean()) {
                 AntiBotPlus.botCounter++;
@@ -134,6 +136,7 @@ public class PlayerPreLoginListener implements Listener {
 
                 e.setLoginResult(Result.KICK_FULL);
                 e.setKickMessage(antiBotUtils.color(kickMsg));
+                antiBotUtils.getInstance().getEngine().hideConsoleMessages();
                 return;
             }
 
@@ -181,6 +184,7 @@ public class PlayerPreLoginListener implements Listener {
 
                         e.setLoginResult(Result.KICK_FULL);
                         e.setKickMessage(antiBotUtils.color(kickMsg));
+                        antiBotUtils.getInstance().getEngine().hideConsoleMessages();
                     }
                 }
             }

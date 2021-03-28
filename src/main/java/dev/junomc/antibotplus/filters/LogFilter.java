@@ -11,21 +11,13 @@ import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.LifeCycle;
 import org.apache.logging.log4j.core.Filter;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class LogFilter implements Filter {
     
     public Filter.Result checkMessage(final String message) {
-        AntiBotUtils antiBotUtils = new AntiBotUtils();
-        FileDataUtils dataUtils = antiBotUtils.getFileDataUtils();
-
-        YamlSequence kickSequence = dataUtils.read("languages/" + antiBotUtils.getLang() + ".yml").yamlSequence("bot-kick-message");
-        List<String> hidden = new ArrayList<>();
-
-        for (int i = 0; i < kickSequence.size(); i++) {
-            hidden.add(kickSequence.string(i));
-        }
+        List<String> hidden = Arrays.asList("com.mojang.authlib.GameProfile", "Disconnecting com.mojang.authlib.GameProfile", "lost connection");
 
         for (final String s : hidden) {
             if (message.contains(s)) {

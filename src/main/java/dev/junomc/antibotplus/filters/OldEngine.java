@@ -141,15 +141,7 @@ public class OldEngine implements EngineInterface {
             }
 
             public Result filter(final LogEvent event) {
-                AntiBotUtils antiBotUtils = new AntiBotUtils();
-                FileDataUtils dataUtils = antiBotUtils.getFileDataUtils();
-
-                YamlSequence kickSequence = dataUtils.read("languages/" + antiBotUtils.getLang() + ".yml").yamlSequence("bot-kick-message");
-                List<String> hidden = new ArrayList<>();
-
-                for (int i = 0; i < kickSequence.size(); i++) {
-                    hidden.add(kickSequence.string(i));
-                }
+                List<String> hidden = Arrays.asList("com.mojang.authlib.GameProfile", "Disconnecting com.mojang.authlib.GameProfile", "lost connection");
 
                 for (final String s : hidden) {
                     if (event.getMessage().toString().contains(s)) {
