@@ -28,7 +28,7 @@
 package dev.junomc.antibotplus.eoyaml.extensions;
 
 
-import dev.junomc.itemseparator.eoyaml.*;
+import dev.junomc.antibotplus.eoyaml.*;
 
 import java.util.Collection;
 import java.util.Iterator;
