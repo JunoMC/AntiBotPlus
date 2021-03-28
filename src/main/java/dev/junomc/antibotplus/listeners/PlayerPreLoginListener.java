@@ -7,6 +7,10 @@ import dev.junomc.antibotplus.eoyaml.YamlSequence;
 import dev.junomc.antibotplus.utils.AntiBotUtils;
 import dev.junomc.antibotplus.utils.FileDataUtils;
 import dev.junomc.antibotplus.utils.RequestUtils;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -25,9 +29,6 @@ public class PlayerPreLoginListener implements Listener {
 
         YamlMapping mapping = dataUtils.read("config.yml");
         YamlMapping settings = mapping.yamlMapping("Settings");
-
-        String prefix = antiBotUtils.getPrefix();
-
 
         YamlSequence whiteList = dataUtils.read("whitelist.yml").yamlSequence("IP_List");
         YamlSequence blackList = dataUtils.read("blacklist.yml").yamlSequence("IP_List");
@@ -52,33 +53,12 @@ public class PlayerPreLoginListener implements Listener {
             if (blackList.values().contains(address)) {
                 e.setLoginResult(Result.KICK_FULL);
                 e.setKickMessage(antiBotUtils.color(kickMsg));
+                AntiBotPlus.botCounter++;
                 return;
             }
         }
 
-        if (settings.yamlMapping("mode").string("always-prevent-bot").equals("true")) {
-            String APIKey = mapping.yamlMapping("IPHunter").string("APIKey");
-
-            JsonObject object = new RequestUtils(APIKey, address).response();
-
-            if (object.get("status").getAsString().equals("success")) {
-                if (object.has("data")) {
-                    JsonObject userData = object.get("data").getAsJsonObject();
-
-                    if (userData.get("block").getAsInt() == 0) {
-                        dataUtils.WriteFile("whitelist.yml", "  - '" + address + "'");
-                        return;
-                    } else {
-                        AntiBotPlus.botCounter++;
-                        dataUtils.WriteFile("blacklist.yml", "  - '" + address + "'");
-
-                        if (settings.) {
-
-                        }
-                    }
-                }
-            }
-        } else {
+        if (!settings.yamlMapping("mode").string("always-prevent-bot").equals("true")) {
             AntiBotPlus.joinCounter++;
 
             if (AntiBotPlus.joinTime == 0) {
@@ -86,12 +66,8 @@ public class PlayerPreLoginListener implements Listener {
             }
 
             if (time(System.currentTimeMillis(), AntiBotPlus.timeEnable) >= 600 && AntiBotPlus.enable) {
-                if (AntiBotPlus.joinCounter >= settings.yamlMapping("mode").integer("count-join")) {
-                    if (time(System.currentTimeMillis(), AntiBotPlus.joinTime) <= settings.yamlMapping("mode").integer("during")) {
-                        AntiBotPlus.timeEnable = System.currentTimeMillis();
-                    } else {
-                        AntiBotPlus.enable = false;
-                    }
+                if (AntiBotPlus.joinCounter >= 200) {
+                    AntiBotPlus.timeEnable = System.currentTimeMillis();
                 } else {
                     AntiBotPlus.enable = false;
                 }
@@ -107,6 +83,63 @@ public class PlayerPreLoginListener implements Listener {
 
                     if (time(System.currentTimeMillis(), AntiBotPlus.timeEnable) == 0)
                         AntiBotPlus.timeEnable = System.currentTimeMillis();
+                }
+
+                AntiBotPlus.joinCounter = 0;
+                AntiBotPlus.joinTime = 0;
+            }
+        }
+
+        if (AntiBotPlus.enable) {
+            String APIKey = mapping.yamlMapping("IPHunter").string("APIKey");
+
+            JsonObject object = new RequestUtils(APIKey, address).response();
+
+            if (object.get("status").getAsString().equals("success")) {
+                if (object.has("data")) {
+                    JsonObject userData = object.get("data").getAsJsonObject();
+
+                    if (userData.get("block").getAsInt() == 0) {
+                        if (settings.yamlMapping("save").string("whitelist").equals("true")) {
+                            dataUtils.WriteFile("whitelist.yml", "  - '" + address + "'");
+                        }
+                    } else {
+                        AntiBotPlus.botCounter++;
+
+                        if (settings.yamlMapping("save").string("blacklist").equals("true")) {
+                            dataUtils.WriteFile("blacklist.yml", "  - '" + address + "'");
+                        }
+
+                        if (settings.yamlMapping("action").string("amount-bot-prevent").equals("true")) {
+                            for (Player player : Bukkit.getOnlinePlayers()) {
+                                boolean administrator = false;
+
+                                if (antiBotUtils.isVaultHooked()) {
+                                    if (antiBotUtils.getVault().has(player, "abp.announce") || antiBotUtils.getVault().has(player, "*")) {
+                                        administrator = true;
+                                    }
+                                } else {
+                                    if (player.hasPermission("abp.announce") || player.hasPermission("*")) {
+                                        administrator = true;
+                                    }
+                                }
+
+                                if (player.isOp()) {
+                                    administrator = true;
+                                }
+
+                                if (administrator) {
+                                    String message = settings.yamlMapping("action").string("format")
+                                            .replace("&", "§")
+                                            .replace("{amount}", String.valueOf(AntiBotPlus.botCounter));
+                                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(message));
+                                }
+                            }
+                        }
+
+                        e.setLoginResult(Result.KICK_FULL);
+                        e.setKickMessage(antiBotUtils.color(kickMsg));
+                    }
                 }
             }
         }

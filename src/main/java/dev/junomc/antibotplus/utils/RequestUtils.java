@@ -25,9 +25,9 @@ public class RequestUtils {
         try {
             StringBuilder result = new StringBuilder();
 
-            URL url = new URL("https://www.iphunter.info:8082/v1/ip/1.53.165.31");
+            URL url = new URL("https://www.iphunter.info:8082/v1/ip/" + this.IP);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestProperty("X-Key", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.WzE2MDMsMTYxNjgxNDI3MiwyMDAwXQ.5iZq3nNUoKzMpiQyd4rwplxxAtE9ic2ZqNwHaBSFF7k");
+            connection.setRequestProperty("X-Key", this.APIKey);
 
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(connection.getInputStream()))) {

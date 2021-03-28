@@ -4,3 +4,10 @@ main: dev.junomc.antibotplus.AntiBotPlus
 api-version: 1.16
 authors: [ JunoMC ]
 description: Protect your server and prevent from bot attack!
+
+permissions:
+  abp.*:
+    default: false
+    children:
+      abp.announce:
+        default: op

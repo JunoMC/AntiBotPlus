@@ -1,9 +1,13 @@
 package dev.junomc.antibotplus;
 
 import dev.junomc.antibotplus.eoyaml.YamlMapping;
+import dev.junomc.antibotplus.listeners.PlayerPreLoginListener;
 import dev.junomc.antibotplus.utils.AntiBotUtils;
 import dev.junomc.antibotplus.utils.FileDataUtils;
+import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
+import org.bukkit.event.Listener;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
@@ -33,12 +37,16 @@ public final class AntiBotPlus extends JavaPlugin {
         getFileDataUtils().createFile("config.yml", YamlFile.CONFIG.getYml());
         getFileDataUtils().createFile("whitelist.yml", "IP_List:");
         getFileDataUtils().createFile("blacklist.yml", "IP_List:");
-        getFileDataUtils().createFile("languages/" + getLang() + ".yml", YamlFile.CONFIG.getYml());
+        getFileDataUtils().createFile("languages/" + getLang() + ".yml",
+                "bot-kick-message:",
+                "  - '&f[&c&lAntiBot&a&l+&f]'",
+                "  - '&cWe have recognized you as a robot'",
+                "  - '&f&lContact admin if you thing this is error'");
 
         YamlMapping mapping = getFileDataUtils().read("config.yml");
         YamlMapping settings = mapping.yamlMapping("Settings");
 
-        enable = Boolean.parseBoolean(settings.yamlMapping("mode").string("always-prevent-bot"));
+        enable = settings.yamlMapping("mode").string("always-prevent-bot").equals("true");
 
         messages(ConsoleLevel.SUCCESS, getPrefix(), (String[]) brand().toArray());
         messages(ConsoleLevel.SUCCESS, getPrefix(),
@@ -46,6 +54,18 @@ public final class AntiBotPlus extends JavaPlugin {
                 "Always on prevent bot mode: " + enable,
                 "Work with Vault: " + isVaultHooked()
         );
+
+        registerEvents(new PlayerPreLoginListener());
+
+        if (isVaultHooked()) {
+            setupPermissions();
+        }
+    }
+
+    private void registerEvents(Listener... listeners) {
+        for (Listener listener : listeners) {
+            Bukkit.getPluginManager().registerEvents(listener, getInstance());
+        }
     }
 
     public String getLang() {
@@ -55,6 +75,18 @@ public final class AntiBotPlus extends JavaPlugin {
 
     public boolean isVaultHooked() {
         return (getServer().getPluginManager().getPlugin("Vault") == null);
+    }
+
+    private Permission perms = null;
+
+    public Permission getVault() {
+        return perms;
+    }
+
+    private boolean setupPermissions() {
+        RegisteredServiceProvider<Permission> rsp = getServer().getServicesManager().getRegistration(Permission.class);
+        perms = rsp.getProvider();
+        return perms != null;
     }
 
     @Override
@@ -97,7 +129,7 @@ public final class AntiBotPlus extends JavaPlugin {
                             "Settings:",
                             "  mode:",
                             "    #we will protect your server with up to 100% efficiency",
-                            "    always-prevent-bot: true",
+                            "    always-prevent-bot: 'true'",
                             "",
                             "    #if you set to false, we'll use following settings",
                             "    #its mean we will enable prevent-bot mode when have 8 joiners in 3 seconds",
@@ -106,15 +138,11 @@ public final class AntiBotPlus extends JavaPlugin {
                             "",
                             "  save:",
                             "    #save ip address of bot, you can save your space",
-                            "    whitelist: true",
-                            "    blacklist: true",
-                            "",
-                            "  announce:",
-                            "    bot-join-server: true",
-                            "    player-join-server: true",
+                            "    whitelist: 'true'",
+                            "    blacklist: 'true'",
                             "",
                             "  action:",
-                            "    amount-bot-prevent: true",
+                            "    amount-bot-prevent: 'true'",
                             "    format: '&f[&eAntiBot&a+&f] &b{amount} &fhad been prevented from server!'",
                             ""
                     ));

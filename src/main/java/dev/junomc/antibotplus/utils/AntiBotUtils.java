@@ -2,6 +2,7 @@ package dev.junomc.antibotplus.utils;
 
 import dev.junomc.antibotplus.AntiBotPlus;
 import net.md_5.bungee.api.ChatColor;
+import net.milkbowl.vault.permission.Permission;
 
 public class AntiBotUtils {
     public AntiBotPlus getInstance() {
@@ -26,5 +27,9 @@ public class AntiBotUtils {
 
     public String getLang() {
         return getInstance().getLang();
+    }
+
+    public Permission getVault() {
+        return getInstance().getVault();
     }
 }
