@@ -1,6 +1,9 @@
 package dev.junomc.antibotplus;
 
 import dev.junomc.antibotplus.eoyaml.YamlMapping;
+import dev.junomc.antibotplus.filters.EngineInterface;
+import dev.junomc.antibotplus.filters.NewEngine;
+import dev.junomc.antibotplus.filters.OldEngine;
 import dev.junomc.antibotplus.listeners.PlayerPreLoginListener;
 import dev.junomc.antibotplus.utils.AntiBotUtils;
 import dev.junomc.antibotplus.utils.FileDataUtils;
@@ -14,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Logger;
 
 public final class AntiBotPlus extends JavaPlugin {
     private static AntiBotPlus instance;
@@ -30,13 +34,26 @@ public final class AntiBotPlus extends JavaPlugin {
 
     public static long timeEnable = 0;
 
+    public static Logger log;
+    public boolean is19Server;
+    public boolean is13Server;
+    public boolean oldEngine;
+
+    private static EngineInterface eng;
+
     @Override
     public void onEnable() {
         instance = this;
 
+        this.log = this.getLogger();
+
+        this.is19Server = true;
+        this.is13Server = false;
+        this.oldEngine = false;
+
         getFileDataUtils().createFile("config.yml", YamlFile.CONFIG.getYml());
-        getFileDataUtils().createFile("whitelist.yml", "IP_List:");
-        getFileDataUtils().createFile("blacklist.yml", "IP_List:");
+        getFileDataUtils().createFile("whitelist.yml");
+        getFileDataUtils().createFile("blacklist.yml");
         getFileDataUtils().createFile("languages/" + getLang() + ".yml",
                 "bot-kick-message:",
                 "  - '&f[&c&lAntiBot&a&l+&f]'",
@@ -48,17 +65,73 @@ public final class AntiBotPlus extends JavaPlugin {
 
         enable = settings.yamlMapping("mode").string("always-prevent-bot").equals("true");
 
-        messages(ConsoleLevel.SUCCESS, getPrefix(), (String[]) brand().toArray());
+        messages(ConsoleLevel.SUCCESS, getPrefix(), brand());
         messages(ConsoleLevel.SUCCESS, getPrefix(),
                 "Has been enabled!",
                 "Always on prevent bot mode: " + enable,
                 "Work with Vault: " + isVaultHooked()
         );
 
+        getMcVersion();
+
+        if (this.oldEngine) {
+            this.eng = new OldEngine();
+        } else {
+            this.eng = new NewEngine();
+        }
+
+        this.getEngine().hideConsoleMessages();
+
         registerEvents(new PlayerPreLoginListener());
 
         if (isVaultHooked()) {
             setupPermissions();
+        }
+    }
+
+    public EngineInterface getEngine() {
+        return this.eng;
+    }
+
+    private void getMcVersion() {
+        final String[] serverVersion = Bukkit.getBukkitVersion().split("-");
+        final String version = serverVersion[0];
+        messages(ConsoleLevel.SUCCESS, getPrefix(), "spigot version: " + version);
+
+        if (version.matches("1.7.10") || version.matches("1.7.9") || version.matches("1.7.5") || version.matches("1.7.2") || version.matches("1.8.8") || version.matches("1.8.3") || version.matches("1.8.4") || version.matches("1.8")) {
+            this.is19Server = false;
+            this.is13Server = false;
+            this.oldEngine = true;
+        }
+        else if (version.matches("1.9") || version.matches("1.9.1") || version.matches("1.9.2") || version.matches("1.9.3") || version.matches("1.9.4") || version.matches("1.10") || version.matches("1.10.1") || version.matches("1.10.2") || version.matches("1.11") || version.matches("1.11.1") || version.matches("1.11.2")) {
+            this.oldEngine = true;
+            this.is19Server = true;
+            this.is13Server = false;
+        }
+        else if (version.matches("1.13") || version.matches("1.13.1") || version.matches("1.13.2")) {
+            this.oldEngine = false;
+            this.is19Server = true;
+            this.is13Server = true;
+        }
+        else if (version.matches("1.14") || version.matches("1.14.1") || version.matches("1.14.2") || version.matches("1.14.3") || version.matches("1.14.4") || version.matches("1.15")) {
+            this.oldEngine = false;
+            this.is19Server = true;
+            this.is13Server = true;
+        }
+        else if (version.matches("1.15") || version.matches("1.15.1") || version.matches("1.15.2")) {
+            this.oldEngine = false;
+            this.is19Server = true;
+            this.is13Server = true;
+        }
+        else if (version.matches("1.16") || version.matches("1.16.1") || version.matches("1.16.2") || version.matches("1.16.3") || version.matches("1.16.4") || version.matches("1.16.5")) {
+            this.oldEngine = false;
+            this.is19Server = true;
+            this.is13Server = true;
+        }
+        else {
+            this.is13Server = true;
+            this.is19Server = true;
+            this.oldEngine = false;
         }
     }
 
@@ -74,7 +147,7 @@ public final class AntiBotPlus extends JavaPlugin {
     }
 
     public boolean isVaultHooked() {
-        return (getServer().getPluginManager().getPlugin("Vault") == null);
+        return !(getServer().getPluginManager().getPlugin("Vault") == null);
     }
 
     private Permission perms = null;
@@ -91,7 +164,7 @@ public final class AntiBotPlus extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        messages(ConsoleLevel.SUCCESS, getPrefix(), (String[]) brand().toArray());
+        messages(ConsoleLevel.SUCCESS, getPrefix(), brand());
         messages(ConsoleLevel.DANGER, getPrefix(), "Had been disabled, see you soon!");
     }
 
@@ -112,7 +185,7 @@ public final class AntiBotPlus extends JavaPlugin {
             this.code = code;
         }
 
-        String[] getYml() {
+        List<String> getYml() {
             this.yml = Collections.synchronizedList(new ArrayList<>());
             switch (this.code) {
                 case 1:
@@ -149,7 +222,7 @@ public final class AntiBotPlus extends JavaPlugin {
                     break;
             }
 
-            return (String[]) yml.toArray();
+            return yml;
         }
     }
 
@@ -168,6 +241,13 @@ public final class AntiBotPlus extends JavaPlugin {
     }
 
     private void messages(ConsoleLevel level, String prefix, String... msgs) {
+        AntiBotUtils abutils = new AntiBotUtils();
+        for (String msg : msgs) {
+            Bukkit.getConsoleSender().sendMessage(abutils.color(prefix + level.getColor() + msg));
+        }
+    }
+
+    private void messages(ConsoleLevel level, String prefix, List<String> msgs) {
         AntiBotUtils abutils = new AntiBotUtils();
         for (String msg : msgs) {
             Bukkit.getConsoleSender().sendMessage(abutils.color(prefix + level.getColor() + msg));

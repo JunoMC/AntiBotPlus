@@ -38,8 +38,33 @@ public class RequestUtils {
 
             JsonParser parser = new JsonParser();
             object = parser.parse(result.toString()).getAsJsonObject();
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-            System.out.println(result);
+        return object;
+    }
+
+    public JsonObject ariel() {
+        JsonObject object = null;
+
+        try {
+            StringBuilder result = new StringBuilder();
+
+            URL url = new URL("https://arielstudio.net/check_proxy.php?IP=" + this.IP);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(connection.getInputStream()))) {
+                for (String line; (line = reader.readLine()) != null;) {
+                    result.append(line);
+                }
+            }
+
+            JsonParser parser = new JsonParser();
+            object = parser.parse(result.toString()).getAsJsonObject();
         } catch (MalformedURLException e) {
             e.printStackTrace();
         } catch (IOException e) {

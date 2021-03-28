@@ -17,6 +17,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent.Result;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class PlayerPreLoginListener implements Listener {
@@ -30,11 +31,11 @@ public class PlayerPreLoginListener implements Listener {
         YamlMapping mapping = dataUtils.read("config.yml");
         YamlMapping settings = mapping.yamlMapping("Settings");
 
-        YamlSequence whiteList = dataUtils.read("whitelist.yml").yamlSequence("IP_List");
-        YamlSequence blackList = dataUtils.read("blacklist.yml").yamlSequence("IP_List");
+        List<String> whitelist = dataUtils.readLines("whitelist.yml");
+        List<String> blacklist = dataUtils.readLines("whitelist.yml");
 
-        if (whiteList.size() > 0) {
-            if (whiteList.values().contains(address)) {
+        if (whitelist.size() > 0) {
+            if (whitelist.contains(address)) {
                 return;
             }
         }
@@ -49,8 +50,8 @@ public class PlayerPreLoginListener implements Listener {
             kickMsg += kickSequence.string(i);
         }
 
-        if (blackList.size() > 0) {
-            if (blackList.values().contains(address)) {
+        if (blacklist.size() > 0) {
+            if (blacklist.contains(address)) {
                 e.setLoginResult(Result.KICK_FULL);
                 e.setKickMessage(antiBotUtils.color(kickMsg));
                 AntiBotPlus.botCounter++;
@@ -95,19 +96,60 @@ public class PlayerPreLoginListener implements Listener {
 
             JsonObject object = new RequestUtils(APIKey, address).response();
 
+            JsonObject ariel = new RequestUtils(APIKey, address).ariel();
+
+            if (ariel.get("isVPN").getAsBoolean()) {
+                AntiBotPlus.botCounter++;
+
+                if (settings.yamlMapping("save").string("blacklist").equals("true")) {
+                    dataUtils.WriteFile("blacklist.yml",  address);
+                }
+
+                if (settings.yamlMapping("action").string("amount-bot-prevent").equals("true")) {
+                    for (Player player : Bukkit.getOnlinePlayers()) {
+                        boolean administrator = false;
+
+                        if (antiBotUtils.isVaultHooked()) {
+                            if (antiBotUtils.getVault().has(player, "abp.announce") || antiBotUtils.getVault().has(player, "*")) {
+                                administrator = true;
+                            }
+                        } else {
+                            if (player.hasPermission("abp.announce") || player.hasPermission("*")) {
+                                administrator = true;
+                            }
+                        }
+
+                        if (player.isOp()) {
+                            administrator = true;
+                        }
+
+                        if (administrator) {
+                            String message = settings.yamlMapping("action").string("format")
+                                    .replace("&", "§")
+                                    .replace("{amount}", String.valueOf(AntiBotPlus.botCounter));
+                            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(message));
+                        }
+                    }
+                }
+
+                e.setLoginResult(Result.KICK_FULL);
+                e.setKickMessage(antiBotUtils.color(kickMsg));
+                return;
+            }
+
             if (object.get("status").getAsString().equals("success")) {
                 if (object.has("data")) {
                     JsonObject userData = object.get("data").getAsJsonObject();
 
                     if (userData.get("block").getAsInt() == 0) {
                         if (settings.yamlMapping("save").string("whitelist").equals("true")) {
-                            dataUtils.WriteFile("whitelist.yml", "  - '" + address + "'");
+                            dataUtils.WriteFile("whitelist.yml", address);
                         }
                     } else {
                         AntiBotPlus.botCounter++;
 
                         if (settings.yamlMapping("save").string("blacklist").equals("true")) {
-                            dataUtils.WriteFile("blacklist.yml", "  - '" + address + "'");
+                            dataUtils.WriteFile("blacklist.yml",  address);
                         }
 
                         if (settings.yamlMapping("action").string("amount-bot-prevent").equals("true")) {
